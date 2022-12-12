@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import argparse
 import threading
 import itertools as it
@@ -8,13 +8,20 @@ import glob
 from PIL import Image
 
 IMAGE_EXTENSIONS = ['*.jpg',  '*.jpeg', '*.png', '*.gif']
+minor_version = sys.version_info.minor
 
 
 def scan_directory(root, *patterns):
-    return it.chain.from_iterable(
-        glob.iglob(f'**/{pattern}', root_dir=root, recursive=True)
-        for pattern in patterns
-    )
+    if minor_version > 9:
+        return it.chain.from_iterable(
+            glob.iglob(f'**/{pattern}', root_dir=root, recursive=True)
+            for pattern in patterns
+        )
+    else:
+        return it.chain.from_iterable(
+            glob.iglob(f'{root}/**/{pattern}', recursive=True)
+            for pattern in patterns
+        )
 
 
 def compress_image(path, quality=40):
@@ -30,7 +37,10 @@ def main(*, root, quality):
     threads = []
     images = list(scan_directory(root, *IMAGE_EXTENSIONS))
     images_len = len(images)
-    print (images)
+
+    if not images_len:
+        print("Images couldn't be found.\nExiting...")
+        return
 
     # Progress Bar
     sys.stdout.write("[%s]" % (" " * images_len))
